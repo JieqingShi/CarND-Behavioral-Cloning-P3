@@ -7,9 +7,10 @@
 # Using the NVIDIA architecture
 # This is mainly used for looking at the potential preprocessing steps, model architecture etc.
 
-# In[57]:
+# In[124]:
 
 
+import csv
 import os
 import numpy as np
 import pandas as pd
@@ -26,14 +27,14 @@ import sklearn
 import cv2
 
 
-# In[2]:
+# In[125]:
 
 
 path_label = "data/driving_log.csv"
 path_img = "data/IMG"
 
 
-# In[3]:
+# In[126]:
 
 
 def get_labels(path_label="data/driving_log.csv"):
@@ -43,7 +44,7 @@ def get_labels(path_label="data/driving_log.csv"):
     return labels
 
 
-# In[4]:
+# In[127]:
 
 
 def get_images(path_img="data/IMG"):
@@ -59,7 +60,7 @@ def get_images(path_img="data/IMG"):
     return images
 
 
-# In[87]:
+# In[128]:
 
 
 def build_model():
@@ -81,7 +82,13 @@ def build_model():
     return model
 
 
-# In[101]:
+# In[143]:
+
+
+# labels = get_labels()
+
+
+# In[161]:
 
 
 samples = []
@@ -94,8 +101,13 @@ samples = samples[1:]
 from sklearn.model_selection import train_test_split
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 
+def flip_image(image, angle):
+    image_flipped = np.fliplr(image)
+    angle_flipped = -angle
+    return image_flipped, angle_flipped
 
-def generator(samples, batch_size=32):
+
+def generator(samples, batch_size=32, flip_images=True):
     num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
         shuffle(samples)
@@ -110,6 +122,13 @@ def generator(samples, batch_size=32):
                 center_angle = float(batch_sample[3])
                 images.append(center_image)
                 angles.append(center_angle)
+                
+                # add image augmentation by flipping *each* image
+                if flip_images:
+                    if center_angle!=0: # no need to flip image if steering wheel angle is 0!
+                        image_flipped, angle_flipped = flip_image(center_image, center_angle)
+                        images.append(image_flipped)
+                        angles.append(angle_flipped)
 
             # trim image to only see section with road
             X_train = np.array(images)
@@ -117,7 +136,7 @@ def generator(samples, batch_size=32):
             yield sklearn.utils.shuffle(X_train, y_train)
 
 
-# In[102]:
+# In[162]:
 
 
 # Set our batch size
@@ -128,27 +147,27 @@ train_generator = generator(train_samples, batch_size=batch_size)
 validation_generator = generator(validation_samples, batch_size=batch_size)
 
 
-# In[53]:
+# In[136]:
 
 
 #y_train = get_labels()
 #X_train = get_images()
 
 
-# In[103]:
+# In[163]:
 
 
 model = build_model()
 
 
-# In[104]:
+# In[164]:
 
 
 model.compile(loss=keras.losses.mse,
               optimizer=keras.optimizers.Adam())
 
 
-# In[105]:
+# In[ ]:
 
 
 # model.fit(X_train, y_train, validation_split=0.2, batch_size=128, epochs=5, shuffle=True)
