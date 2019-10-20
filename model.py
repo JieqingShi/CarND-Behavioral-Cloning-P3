@@ -63,7 +63,7 @@ model.compile(loss=keras.losses.mse,
 
 model.fit(X_train, y_train, validation_split=0.2, batch_size=128, epochs=5, shuffle=True)
 
-model.save_weights("model.h5")
+model.save("model.h5")
 K.clear_session()
 
 
