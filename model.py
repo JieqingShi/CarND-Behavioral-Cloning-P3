@@ -88,22 +88,6 @@ def build_model():
 # labels = get_labels()
 
 
-# In[175]:
-
-
-blabla = []
-a = ["a", "b", "c"]
-b = [1, 2, 3]
-blabla.extend(b)
-blabla.extend(a)
-
-
-# In[176]:
-
-
-blabla
-
-
 # In[177]:
 
 
@@ -215,13 +199,13 @@ model.save("model.h5")
 print("model saved")
 
 
-# In[167]:
+# In[182]:
 
 
 get_ipython().system(' jupyter nbconvert --to script model.ipynb')
 
 
-# In[168]:
+# In[183]:
 
 
 K.clear_session()
