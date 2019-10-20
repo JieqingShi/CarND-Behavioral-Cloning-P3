@@ -88,7 +88,23 @@ def build_model():
 # labels = get_labels()
 
 
-# In[161]:
+# In[175]:
+
+
+blabla = []
+a = ["a", "b", "c"]
+b = [1, 2, 3]
+blabla.extend(b)
+blabla.extend(a)
+
+
+# In[176]:
+
+
+blabla
+
+
+# In[177]:
 
 
 samples = []
@@ -107,10 +123,12 @@ def flip_image(image, angle):
     return image_flipped, angle_flipped
 
 
-def generator(samples, batch_size=32, flip_images=True):
+def generator(samples, batch_size=32, flip_images=True, add_left_images=True, add_right_images=True):
     num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
         shuffle(samples)
+        correction = 0.2
+        
         for offset in range(0, num_samples, batch_size):
             batch_samples = samples[offset:offset+batch_size]
 
@@ -123,12 +141,27 @@ def generator(samples, batch_size=32, flip_images=True):
                 images.append(center_image)
                 angles.append(center_angle)
                 
+                if add_left_images:
+                    left_img_name = 'data/IMG/'+batch_sample[1].split('/')[-1]
+                    left_image = plt.imread(left_img_name)
+                    left_angle = center_angle + correction
+                    images.append(left_image)
+                    angles.append(left_angle)
+                
+                if add_right_images:
+                    right_img_name = 'data/IMG/'+batch_sample[2].split('/')[-1]
+                    right_image = plt.imread(right_img_name)
+                    right_angle = center_angle - correction
+                    images.append(right_image)
+                    angles.append(right_angle)
+                
                 # add image augmentation by flipping *each* image
                 if flip_images:
                     if center_angle!=0: # no need to flip image if steering wheel angle is 0!
                         image_flipped, angle_flipped = flip_image(center_image, center_angle)
                         images.append(image_flipped)
                         angles.append(angle_flipped)
+                        
 
             # trim image to only see section with road
             X_train = np.array(images)
@@ -136,7 +169,7 @@ def generator(samples, batch_size=32, flip_images=True):
             yield sklearn.utils.shuffle(X_train, y_train)
 
 
-# In[162]:
+# In[178]:
 
 
 # Set our batch size
@@ -154,27 +187,27 @@ validation_generator = generator(validation_samples, batch_size=batch_size)
 #X_train = get_images()
 
 
-# In[163]:
+# In[179]:
 
 
 model = build_model()
 
 
-# In[164]:
+# In[180]:
 
 
 model.compile(loss=keras.losses.mse,
               optimizer=keras.optimizers.Adam())
 
 
-# In[ ]:
+# In[181]:
 
 
 # model.fit(X_train, y_train, validation_split=0.2, batch_size=128, epochs=5, shuffle=True)
 model.fit_generator(train_generator, steps_per_epoch=np.ceil(len(train_samples)/batch_size),             validation_data=validation_generator, validation_steps=np.ceil(len(validation_samples)/batch_size),             epochs=5, verbose=1)
 
 
-# In[106]:
+# In[166]:
 
 
 # model.save("model.h5")
@@ -182,7 +215,13 @@ model.save("model.h5")
 print("model saved")
 
 
-# In[12]:
+# In[167]:
+
+
+get_ipython().system(' jupyter nbconvert --to script model.ipynb')
+
+
+# In[168]:
 
 
 K.clear_session()
