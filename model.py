@@ -14,6 +14,7 @@ import pandas as pd
 import keras
 import matplotlib.pyplot as plt
 from scipy import ndimage
+from keras import backend as K
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Lambda, Cropping2D
 from keras.layers import Conv2D, MaxPooling2D
@@ -62,7 +63,8 @@ model.compile(loss=keras.losses.mse,
 
 model.fit(X_train, y_train, validation_split=0.2, batch_size=128, epochs=5, shuffle=True)
 
-model.save("model.h5")
+model.save_weights("model.h5")
+K.clear_session()
 
 
 
