@@ -12,11 +12,11 @@ def finetune_trained_model(model_path, img_path, learning_rate=0.0001, epochs=5,
     for layer in loaded_model.layers[:-5]:
         layer.trainable=False
 
-    train_samples, validation_samples = get_train_val_samples(driving_log_path=f"{img_path}/driving_log.csv")
+    train_samples, validation_samples = get_train_val_samples(driving_log_path="{}/driving_log.csv".format(img_path))
 
     # compile and train the model using the generator function
-    train_generator = generator(train_samples, path_img=f"{img_path}/IMG/", batch_size=batch_size)
-    validation_generator = generator(validation_samples, path_img=f"{img_path}/IMG/", batch_size=batch_size)
+    train_generator = generator(train_samples, path_img="{}/IMG/".format(img_path), batch_size=batch_size)
+    validation_generator = generator(validation_samples, path_img="{}/IMG/".format(img_path), batch_size=batch_size)
 
     loaded_model.compile(loss=keras.losses.mse,
                          optimizer=keras.optimizers.Adam(lr=learning_rate))
@@ -64,5 +64,5 @@ if __name__ == '__main__':
     
     finetune_trained_model(model_path=args.model_path, img_path=args.img_path, learning_rate=args.learning_rate, epochs=args.epochs, 
                            model_name=args.model_name)
-    print(f"model finetuned for {args.epochs} epochs with learning rate = {args.learning_rate} and saved under {args.model_name}")
+    print("model finetuned for {} epochs with learning rate = {} and saved under {}".format(args.epochs, args.learning_rate, args.model_name))
 
