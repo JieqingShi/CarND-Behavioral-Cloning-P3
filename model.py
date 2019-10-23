@@ -1,15 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# ### Notebook for training used on the provided dataset
-# 
-# 
-# Using the NVIDIA architecture
-# This is mainly used for looking at the potential preprocessing steps, model architecture etc.
-
-# In[124]:
-
-
 import csv
 import os
 import numpy as np
@@ -26,26 +14,13 @@ from sklearn.utils import shuffle
 import sklearn
 import cv2
 
-
-# In[125]:
-
-
-path_label = "data/driving_log.csv"
-path_img = "data/IMG"
-
-
-# In[126]:
-
-
+batch_size=128  # module level variable
+    
 def get_labels(path_label="data/driving_log.csv"):
     df = pd.read_csv(path_label)
     labels = df["steering"].values
     print("Got labels")
     return labels
-
-
-# In[127]:
-
 
 def get_images(path_img="data/IMG"):
     images = []
@@ -58,10 +33,6 @@ def get_images(path_img="data/IMG"):
     images = np.array(images)
     print("Got images")
     return images
-
-
-# In[128]:
-
 
 def build_model():
     model = Sequential()
@@ -81,25 +52,17 @@ def build_model():
     model.add(Dense(1))
     return model
 
+def get_train_val_samples(driving_log_path="data/driving_log.csv"):
+    samples = []
+    with open(driving_log_path) as csvfile:
+        reader = csv.reader(csvfile)
+        for line in reader:
+            samples.append(line)
+    samples = samples[1:]
 
-# In[143]:
-
-
-# labels = get_labels()
-
-
-# In[177]:
-
-
-samples = []
-with open('data/driving_log.csv') as csvfile:
-    reader = csv.reader(csvfile)
-    for line in reader:
-        samples.append(line)
-samples = samples[1:]
-        
-from sklearn.model_selection import train_test_split
-train_samples, validation_samples = train_test_split(samples, test_size=0.2)
+    from sklearn.model_selection import train_test_split
+    train_samples, validation_samples = train_test_split(samples, test_size=0.2)
+    return train_samples, validation_samples
 
 def flip_image(image, angle):
     image_flipped = np.fliplr(image)
@@ -107,7 +70,7 @@ def flip_image(image, angle):
     return image_flipped, angle_flipped
 
 
-def generator(samples, batch_size=32, flip_images=True, add_left_images=True, add_right_images=True):
+def generator(samples, path_img, batch_size=32, flip_images=True, add_left_images=True, add_right_images=True):
     num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
         shuffle(samples)
@@ -119,21 +82,21 @@ def generator(samples, batch_size=32, flip_images=True, add_left_images=True, ad
             images = []
             angles = []
             for batch_sample in batch_samples:
-                name = 'data/IMG/'+batch_sample[0].split('/')[-1]
+                name = path_img+batch_sample[0].split('/')[-1]
                 center_image = plt.imread(name)
                 center_angle = float(batch_sample[3])
                 images.append(center_image)
                 angles.append(center_angle)
                 
                 if add_left_images:
-                    left_img_name = 'data/IMG/'+batch_sample[1].split('/')[-1]
+                    left_img_name = path_img+batch_sample[1].split('/')[-1]
                     left_image = plt.imread(left_img_name)
                     left_angle = center_angle + correction
                     images.append(left_image)
                     angles.append(left_angle)
                 
                 if add_right_images:
-                    right_img_name = 'data/IMG/'+batch_sample[2].split('/')[-1]
+                    right_img_name = path_img+batch_sample[2].split('/')[-1]
                     right_image = plt.imread(right_img_name)
                     right_angle = center_angle - correction
                     images.append(right_image)
@@ -151,90 +114,24 @@ def generator(samples, batch_size=32, flip_images=True, add_left_images=True, ad
             X_train = np.array(images)
             y_train = np.array(angles)
             yield sklearn.utils.shuffle(X_train, y_train)
+            
 
+if __name__ == '__main__':
+    path_label = "data/driving_log.csv"
+    path_img = "data/IMG/"
+    train_samples, validation_samples = get_train_val_samples()
+    # compile and train the model using the generator function
+    train_generator = generator(train_samples, path_img=path_img, batch_size=batch_size)
+    validation_generator = generator(validation_samples, path_img=path_img, batch_size=batch_size)
 
-# In[178]:
+    model = build_model()
+    model.compile(loss=keras.losses.mse,
+                  optimizer=keras.optimizers.Adam())
+    model.fit_generator(train_generator, steps_per_epoch=np.ceil(len(train_samples)/batch_size), validation_data=validation_generator, 
+                        validation_steps=np.ceil(len(validation_samples)/batch_size), epochs=5, verbose=1)
 
-
-# Set our batch size
-batch_size=128
-
-# compile and train the model using the generator function
-train_generator = generator(train_samples, batch_size=batch_size)
-validation_generator = generator(validation_samples, batch_size=batch_size)
-
-
-# In[136]:
-
-
-#y_train = get_labels()
-#X_train = get_images()
-
-
-# In[179]:
-
-
-model = build_model()
-
-
-# In[180]:
-
-
-model.compile(loss=keras.losses.mse,
-              optimizer=keras.optimizers.Adam())
-
-
-# In[181]:
-
-
-# model.fit(X_train, y_train, validation_split=0.2, batch_size=128, epochs=5, shuffle=True)
-model.fit_generator(train_generator, steps_per_epoch=np.ceil(len(train_samples)/batch_size),             validation_data=validation_generator, validation_steps=np.ceil(len(validation_samples)/batch_size),             epochs=5, verbose=1)
-
-
-# In[166]:
-
-
-# model.save("model.h5")
-model.save("model.h5")
-print("model saved")
-
-
-# In[182]:
-
-
-get_ipython().system(' jupyter nbconvert --to script model.ipynb')
-
-
-# In[183]:
-
-
-K.clear_session()
-
-
-# In[ ]:
-
-
-# ToDos for first step
-
-# write generator for iterative loading of images
-# add regularization stuff (batch_norm, dropout)
-# train and save model
-# deploy model and test
-
-
-# #### Further Experimentations:
-# 
-# 
-# - different processing strategies in lambda layer
-# - Image augmentation (flipping)
-# - cropping images (top and bottom)
-# - use left and right images for recovery
-# - modify model architecture
-# - iterative, "transfer" learning approach (see https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/Behavioral+Cloning+Cheatsheet+-+CarND.pdf)
-# 
-
-# In[ ]:
-
+    model.save("model.h5")
+    print("model saved")
 
 
 
